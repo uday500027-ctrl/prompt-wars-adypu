@@ -8,6 +8,7 @@ interface FadeContentProps {
   className?: string;
 }
 
+/** Wraps children in a subtle CSS fade-and-slide entrance that respects reduced motion. */
 export function FadeContent({
   children,
   delayMs = 0,

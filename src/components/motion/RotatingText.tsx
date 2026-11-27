@@ -7,13 +7,16 @@ interface RotatingTextProps {
   intervalMs?: number;
   pauseOnHover?: boolean;
   className?: string;
+  srFallback?: string;
 }
 
+/** Cycles through a list of phrases at a fixed interval with optional hover pause. */
 export function RotatingText({
   phrases,
   intervalMs = 3600,
   pauseOnHover = true,
   className = "",
+  srFallback,
 }: RotatingTextProps) {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -40,9 +43,11 @@ export function RotatingText({
     <span
       onMouseEnter={pauseOnHover ? () => setIsPaused(true) : undefined}
       onMouseLeave={pauseOnHover ? () => setIsPaused(false) : undefined}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
       className={`inline-grid align-baseline overflow-hidden whitespace-nowrap ${className}`}
     >
-      <span className="sr-only">{phrases.join(", ")}</span>
+      <span className="sr-only">{srFallback ?? phrases.join(", ")}</span>
       {phrases.map((phrase) => (
         <span
           key={`sizer-${phrase}`}

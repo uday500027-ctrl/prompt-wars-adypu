@@ -73,6 +73,11 @@ function normalizeGeminiPayload(raw: unknown): Omit<
   };
 }
 
+/**
+ * POST /api/audit
+ * Evaluates already-sanitized text and aggregate entity counts using Gemini 2.5 Flash,
+ * falling back deterministically to a local compliance brief on missing keys, timeouts, or errors.
+ */
 export async function POST(request: Request) {
   let body: unknown;
   try {

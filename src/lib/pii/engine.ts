@@ -1,4 +1,5 @@
 import { detectPiiCandidates } from "./detectors";
+import { ALL_PII_CATEGORIES } from "./constants";
 import type {
   EntityCounts,
   PiiMatch,
@@ -26,6 +27,7 @@ const PSEUDONYM_PREFIXES: Record<PiiType, string> = {
   CREDIT_CARD: "CARD",
 };
 
+/** Creates a zeroed-out entity count record for all PII categories. */
 export function createEmptyCounts(): EntityCounts {
   return {
     EMAIL: 0,
@@ -139,14 +141,7 @@ export function sanitizeText(
   // Build the active set once — O(1) lookup per match
   const activeSet: ReadonlySet<PiiType> = enabledCategories
     ? new Set(enabledCategories)
-    : new Set<PiiType>([
-        "EMAIL",
-        "PHONE",
-        "IP_ADDRESS",
-        "PAN",
-        "AADHAAR",
-        "CREDIT_CARD",
-      ]);
+    : new Set<PiiType>(ALL_PII_CATEGORIES);
 
   const matches: PiiMatch[] = candidates
     .filter((candidate) => activeSet.has(candidate.type))

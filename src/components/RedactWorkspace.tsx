@@ -17,6 +17,8 @@ import { HeroSection } from "@/src/components/HeroSection";
 import { FadeContent } from "@/src/components/motion/FadeContent";
 import { StarBorder } from "@/src/components/motion/StarBorder";
 import { StatusBadge } from "@/src/components/StatusBadge";
+import { downloadFile } from "@/src/lib/download";
+import { ALL_PII_CATEGORIES } from "@/src/lib/pii/constants";
 import { sanitizeText } from "@/src/lib/pii/engine";
 import { SAMPLE_DATASETS } from "@/src/lib/pii/samples";
 import type {
@@ -25,15 +27,7 @@ import type {
   RedactionMode,
 } from "@/src/lib/pii/types";
 
-const ALL_CATEGORIES: readonly PiiType[] = [
-  "EMAIL",
-  "PHONE",
-  "IP_ADDRESS",
-  "PAN",
-  "AADHAAR",
-  "CREDIT_CARD",
-];
-
+/** Maximum file size accepted for local browser processing (2 MiB). */
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
 const SAMPLE_SHORT_LABELS: Record<string, string> = {
@@ -55,6 +49,7 @@ const emptySubscribe = () => () => { };
 
 type InspectionTab = "PSEUDONYMS" | "AUDIT";
 
+/** Main interactive client-side PII sanitization workbench and state coordinator. */
 export function RedactWorkspace() {
   const initialSample = SAMPLE_DATASETS[0];
   const [rawText, setRawText] = useState<string>(initialSample.content);
@@ -69,7 +64,7 @@ export function RedactWorkspace() {
     useState<PiiType | null>(null);
   const [enabledCategories, setEnabledCategories] = useState<
     ReadonlySet<PiiType>
-  >(new Set(ALL_CATEGORIES));
+  >(new Set(ALL_PII_CATEGORIES));
   const [activeTab, setActiveTab] = useState<InspectionTab>("PSEUDONYMS");
 
   const [isReadingFile, setIsReadingFile] = useState(false);
@@ -183,16 +178,7 @@ export function RedactWorkspace() {
     const mimeType = exportFilename.endsWith(".csv")
       ? "text/csv;charset=utf-8"
       : "text/plain;charset=utf-8";
-
-    const blob = new Blob([result.sanitizedText], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = exportFilename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+    downloadFile(result.sanitizedText, exportFilename, mimeType);
   }, [exportFilename, result.sanitizedText]);
 
   const handleDownloadAuditJson = useCallback(() => {
@@ -208,18 +194,11 @@ export function RedactWorkspace() {
       falsePositivesBlockedLuhn: result.falsePositivesBlocked,
       countsByCategory: result.counts,
     };
-
-    const blob = new Blob([JSON.stringify(certificate, null, 2)], {
-      type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "redactlocal-audit-report.json";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+    downloadFile(
+      JSON.stringify(certificate, null, 2),
+      "redactlocal-audit-report.json",
+      "application/json;charset=utf-8"
+    );
   }, [
     enabledCategories,
     exportFilename,
@@ -270,10 +249,19 @@ export function RedactWorkspace() {
     e: React.KeyboardEvent<HTMLButtonElement>,
     current: InspectionTab
   ) => {
+    let next: InspectionTab | null = null;
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      const next: InspectionTab =
-        current === "PSEUDONYMS" ? "AUDIT" : "PSEUDONYMS";
+      next = current === "PSEUDONYMS" ? "AUDIT" : "PSEUDONYMS";
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      next = "PSEUDONYMS";
+    } else if (e.key === "End") {
+      e.preventDefault();
+      next = "AUDIT";
+    }
+
+    if (next !== null) {
       setActiveTab(next);
       window.requestAnimationFrame(() => {
         if (next === "PSEUDONYMS") {
@@ -294,7 +282,7 @@ export function RedactWorkspace() {
         processingTimeMs={isClient ? result.processingTimeMs : null}
       />
 
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
         <HeroSection
           onLaunchDemo={handleLaunchDemo}
           onTriggerUpload={() => fileInputRef.current?.click()}
@@ -308,6 +296,26 @@ export function RedactWorkspace() {
               aria-label="Interactive PII Sanitization Workbench"
               className="scroll-mt-16 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_40px_-15px_rgba(15,23,42,0.08)]"
             >
+              <h2 className="sr-only">Interactive PII Sanitization Workbench</h2>
+
+              {/* Screen reader live announcement for sanitization and mode changes */}
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+              >
+                {result.totalMatches > 0
+                  ? `${result.totalMatches} PII ${
+                      result.totalMatches === 1 ? "entity" : "entities"
+                    } sanitized across ${
+                      Object.values(result.counts).filter((c) => c > 0).length
+                    } categories in ${
+                      MODE_OPTIONS.find((m) => m.value === mode)?.label
+                    } mode.`
+                  : "No PII entities detected."}
+              </div>
+
               {/* Dark-Slate Developer Security Toolbar */}
               <div className="dark-toolbar flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-800 bg-slate-900 px-3.5 py-2.5 text-slate-100 sm:px-4">
                 {/* Left: Sample Presets + Upload */}
@@ -320,10 +328,11 @@ export function RedactWorkspace() {
                         type="button"
                         onClick={() => handleLoadSample(sample.id)}
                         aria-pressed={isActive}
-                        className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${isActive
+                        className={`min-h-8 sm:min-h-9 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                          isActive
                             ? "border-white bg-white text-slate-950"
                             : "border-slate-700 bg-slate-800 text-slate-200 hover:border-slate-500 hover:bg-slate-700/80"
-                          }`}
+                        }`}
                       >
                         {SAMPLE_SHORT_LABELS[sample.id] ?? sample.label}
                       </button>
@@ -334,6 +343,7 @@ export function RedactWorkspace() {
                     ref={fileInputRef}
                     id="pii-file-upload"
                     type="file"
+                    aria-label="Upload .txt or .csv file for local PII sanitization"
                     accept=".txt,.csv,text/plain,text/csv"
                     className="sr-only"
                     onChange={(e) => {
@@ -346,7 +356,7 @@ export function RedactWorkspace() {
                     type="button"
                     disabled={isReadingFile}
                     onClick={() => fileInputRef.current?.click()}
-                    className="min-h-8 rounded-md border border-dashed border-slate-600 bg-slate-800/60 px-2.5 py-1 text-xs font-medium text-slate-200 transition-colors hover:border-slate-400 hover:text-white disabled:opacity-45"
+                    className="min-h-8 sm:min-h-9 rounded-md border border-dashed border-slate-600 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-slate-400 hover:text-white disabled:opacity-45"
                   >
                     {isReadingFile ? "Reading..." : "Upload .txt/.csv"}
                   </button>
@@ -369,10 +379,11 @@ export function RedactWorkspace() {
                           setMode(opt.value);
                           setAuditBrief(null);
                         }}
-                        className={`min-h-7 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${active
+                        className={`min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                          active
                             ? "bg-white text-slate-950 shadow-2xs"
                             : "text-slate-300 hover:text-white"
-                          }`}
+                        }`}
                       >
                         {opt.label}
                       </button>
@@ -386,7 +397,7 @@ export function RedactWorkspace() {
                     type="button"
                     disabled={!hasText}
                     onClick={handleDownload}
-                    className="min-h-8 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="min-h-9 rounded-md bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     Download {exportFilename.endsWith(".csv") ? ".csv" : ".txt"}
                   </button>
@@ -395,7 +406,7 @@ export function RedactWorkspace() {
                     type="button"
                     disabled={!hasText}
                     onClick={handleDownloadAuditJson}
-                    className="min-h-8 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="min-h-9 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     Audit JSON
                   </button>
@@ -404,7 +415,7 @@ export function RedactWorkspace() {
                     type="button"
                     disabled={!hasText}
                     onClick={handleCopy}
-                    className="min-h-8 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="min-h-9 rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {copied ? "Copied" : "Copy"}
                   </button>
@@ -417,7 +428,7 @@ export function RedactWorkspace() {
                       type="button"
                       disabled={!hasText || auditLoading}
                       onClick={handleRunAudit}
-                      className="min-h-8 rounded-[6px] bg-emerald-950/90 px-2.5 py-1.5 text-xs font-semibold text-emerald-100 transition-colors hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-45"
+                      className="min-h-9 rounded-[6px] bg-emerald-950/90 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-colors hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       {auditLoading ? "Auditing..." : "Gemini Privacy Audit"}
                     </button>
@@ -480,13 +491,15 @@ export function RedactWorkspace() {
                       type="button"
                       role="tab"
                       aria-selected={activeTab === "PSEUDONYMS"}
+                      aria-controls="panel-pseudonyms"
                       tabIndex={activeTab === "PSEUDONYMS" ? 0 : -1}
                       onClick={() => setActiveTab("PSEUDONYMS")}
                       onKeyDown={(e) => handleTabKeyDown(e, "PSEUDONYMS")}
-                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${activeTab === "PSEUDONYMS"
+                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${
+                        activeTab === "PSEUDONYMS"
                           ? "text-slate-900"
                           : "text-slate-600 hover:text-slate-900"
-                        }`}
+                      }`}
                     >
                       <span>Pseudonym Mapping Table</span>
                       <span className="rounded bg-slate-200/70 px-1.5 py-0.5 font-mono text-[10px] text-slate-700">
@@ -502,13 +515,15 @@ export function RedactWorkspace() {
                       type="button"
                       role="tab"
                       aria-selected={activeTab === "AUDIT"}
+                      aria-controls="panel-audit"
                       tabIndex={activeTab === "AUDIT" ? 0 : -1}
                       onClick={() => setActiveTab("AUDIT")}
                       onKeyDown={(e) => handleTabKeyDown(e, "AUDIT")}
-                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${activeTab === "AUDIT"
+                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${
+                        activeTab === "AUDIT"
                           ? "text-slate-900"
                           : "text-slate-600 hover:text-slate-900"
-                        }`}
+                      }`}
                     >
                       <span>Gemini Privacy Audit Brief</span>
                       {auditBrief && (
@@ -520,9 +535,12 @@ export function RedactWorkspace() {
                   </div>
 
                   <div
+                    id="panel-pseudonyms"
                     role="tabpanel"
                     aria-labelledby="tab-pseudonyms"
+                    tabIndex={0}
                     hidden={activeTab !== "PSEUDONYMS"}
+                    className="focus:outline-none"
                   >
                     <div className="p-3.5">
                       <PseudonymTable
@@ -536,9 +554,12 @@ export function RedactWorkspace() {
                   </div>
 
                   <div
+                    id="panel-audit"
                     role="tabpanel"
                     aria-labelledby="tab-audit"
+                    tabIndex={0}
                     hidden={activeTab !== "AUDIT"}
+                    className="focus:outline-none"
                   >
                     <div className="p-3.5">
                       <AuditBriefPanel
@@ -563,7 +584,7 @@ export function RedactWorkspace() {
             RedactLocal &mdash; Detection, Luhn verification, and redaction run
             strictly inside your browser.
           </span>
-          <span className="font-mono text-[11px]">
+          <span className="font-mono text-xs text-slate-600">
             Optional Gemini audit receives sanitized text &amp; counts only.
           </span>
         </div>

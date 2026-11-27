@@ -15,18 +15,30 @@
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
+html,
 body {
+  max-width: 100%;
+  overflow-x: hidden;
   background-color: var(--bg-canvas);
   color: var(--ink-primary);
 }
 
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid #0f172a;
-  outline-offset: 2px;
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #0f172a !important;
+  outline-offset: 2px !important;
 }
 
-.dark-toolbar :where(button, a, [tabindex]):focus-visible {
-  outline-color: #ffffff;
+.dark-toolbar a:focus-visible,
+.dark-toolbar button:focus-visible,
+.dark-toolbar input:focus-visible,
+.dark-toolbar [tabindex]:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 2px !important;
 }
 
 .hero-dot-grid {
@@ -52,6 +64,7 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -63,6 +76,7 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -91,4 +105,72 @@ body {
   .star-border-beam {
     animation: star-border-spin 4s linear infinite;
   }
+}
+
+/* Dark Mode Console Theme */
+html[data-theme="dark"] {
+  --bg-canvas: #090d16;
+  --bg-card: #0f172a;
+  --ink-primary: #f1f5f9;
+  --ink-muted: #94a3b8;
+  --border-hairline: rgba(51, 65, 85, 0.75);
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] .bg-\[\#F8FAFC\] {
+  background-color: #090d16 !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .hero-dot-grid {
+  background-color: #090d16;
+  background-image: radial-gradient(#1e293b 1.25px, transparent 1.25px);
+}
+
+/* Catch solid AND translucent white/slate surfaces (navbar, cards, headers) */
+html[data-theme="dark"] [class*="bg-white"] {
+  background-color: #0f172a !important;
+}
+
+html[data-theme="dark"] [class*="bg-slate-50"],
+html[data-theme="dark"] [class*="bg-slate-100"] {
+  background-color: #131c2e !important;
+}
+
+html[data-theme="dark"] [class*="bg-slate-200"] {
+  background-color: #1e293b !important;
+}
+
+html[data-theme="dark"] [class*="border-slate-200"],
+html[data-theme="dark"] [class*="border-slate-300"] {
+  border-color: rgba(51, 65, 85, 0.8) !important;
+}
+
+html[data-theme="dark"] .text-slate-950,
+html[data-theme="dark"] .text-slate-900,
+html[data-theme="dark"] .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .text-slate-700,
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] [role="tab"][aria-selected="true"]::after {
+  border-block-end-color: #38bdf8;
+}
+
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] pre {
+  background-color: #0b1120 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Keep active buttons inside the dark toolbar crisp */
+html[data-theme="dark"] .dark-toolbar [class*="bg-white"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
 }

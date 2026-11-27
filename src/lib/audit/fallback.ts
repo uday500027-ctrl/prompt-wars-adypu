@@ -1,9 +1,9 @@
+import { ALL_PII_CATEGORIES } from "@/src/lib/pii/constants";
 import type {
   AuditRequestPayload,
   AuditResponse,
   AuditRiskLevel,
   EntityCounts,
-  PiiType,
   RedactionMode,
 } from "@/src/lib/pii/types";
 
@@ -13,17 +13,13 @@ const VALID_MODES: readonly RedactionMode[] = [
   "PSEUDONYMIZE",
 ];
 
-const PII_KEYS: readonly PiiType[] = [
-  "EMAIL",
-  "PHONE",
-  "IP_ADDRESS",
-  "PAN",
-  "AADHAAR",
-  "CREDIT_CARD",
-];
-
+/** Maximum sanitized text length accepted by the audit endpoint (50 000 chars). */
 export const MAX_AUDIT_TEXT_LENGTH = 50_000;
 
+/**
+ * Validates and parses the raw audit request body into a typed payload.
+ * Returns `{ ok: true, data }` on success, or `{ ok: false, error }` with a human-readable message.
+ */
 export function parseAuditPayload(
   raw: unknown
 ): { ok: true; data: AuditRequestPayload } | { ok: false; error: string } {
@@ -67,7 +63,7 @@ export function parseAuditPayload(
   };
 
   const countsObj = counts as Record<string, unknown>;
-  for (const key of PII_KEYS) {
+  for (const key of ALL_PII_CATEGORIES) {
     const val = countsObj[key];
     if (typeof val !== "number" || !Number.isFinite(val) || val < 0) {
       return { ok: false, error: `Invalid count for ${key}.` };
@@ -104,7 +100,9 @@ export function parseAuditPayload(
 }
 
 /**
- * Deterministic local compliance brief used when GEMINI_API_KEY is absent or Gemini fails.
+ * Deterministic local compliance brief used when GEMINI_API_KEY is absent,
+ * invalid, or when the Gemini API call fails or times out. Produces a stable
+ * audit response with no network dependency.
  */
 export function buildLocalFallbackAudit(
   payload: AuditRequestPayload
@@ -131,7 +129,7 @@ export function buildLocalFallbackAudit(
     safeToShare = mode === "PSEUDONYMIZE";
   }
 
-  const activeCategories = PII_KEYS.filter((k) => counts[k] > 0)
+  const activeCategories = ALL_PII_CATEGORIES.filter((k) => counts[k] > 0)
     .map((k) => `${k} (${counts[k]})`)
     .join(", ");
 

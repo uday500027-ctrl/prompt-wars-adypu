@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     "100% browser-based PII detection and redaction for emails, phone numbers, IP addresses, PAN, Aadhaar, and Luhn-verified credit cards with zero raw data uploads.",
 };
 
+/** Root Next.js layout configuring fonts, skip-link accessibility, and page metadata. */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +31,13 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-slate-900 selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-slate-900 selection:text-white max-w-full overflow-x-hidden">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        >
+          Skip to main content
+        </a>
         {children}
       </body>
     </html>

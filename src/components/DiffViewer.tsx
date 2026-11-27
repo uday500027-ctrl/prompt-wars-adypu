@@ -1,65 +1,12 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { ENTITY_META } from "@/src/lib/pii/constants";
 import type {
   PiiType,
   RedactionMode,
   SanitizationResult,
 } from "@/src/lib/pii/types";
-
-export const ENTITY_META: Record<
-  PiiType,
-  { label: string; short: string; badgeClass: string; markClass: string; dotClass: string }
-> = {
-  EMAIL: {
-    label: "Email",
-    short: "EMAIL",
-    // muted slate-blue
-    badgeClass: "border-slate-300/80 bg-slate-100 text-slate-900",
-    markClass: "bg-slate-100 text-slate-900 border border-slate-300/80",
-    dotClass: "bg-[#3B5B8A]",
-  },
-  PHONE: {
-    label: "Phone",
-    short: "PHONE",
-    // muted stone
-    badgeClass: "border-stone-300/80 bg-stone-100 text-stone-900",
-    markClass: "bg-stone-100 text-stone-900 border border-stone-300/80",
-    dotClass: "bg-stone-500",
-  },
-  IP_ADDRESS: {
-    label: "IP",
-    short: "IP",
-    // muted slate
-    badgeClass: "border-slate-300/80 bg-slate-50 text-slate-800",
-    markClass: "bg-slate-50 text-slate-800 border border-slate-300/80",
-    dotClass: "bg-slate-500",
-  },
-  PAN: {
-    label: "PAN",
-    short: "PAN",
-    // muted amber
-    badgeClass: "border-amber-200/90 bg-amber-50 text-[#92600A]",
-    markClass: "bg-amber-50 text-[#92600A] border border-amber-200/90",
-    dotClass: "bg-[#92600A]",
-  },
-  AADHAAR: {
-    label: "Aadhaar",
-    short: "AADHAAR",
-    // muted rose
-    badgeClass: "border-rose-200/90 bg-rose-50 text-[#9F2D3A]",
-    markClass: "bg-rose-50 text-[#9F2D3A] border border-rose-200/90",
-    dotClass: "bg-[#9F2D3A]",
-  },
-  CREDIT_CARD: {
-    label: "Credit Card",
-    short: "CARD",
-    // muted blue-slate
-    badgeClass: "border-slate-300/80 bg-slate-100 text-[#3B5B8A]",
-    markClass: "bg-slate-100 text-[#3B5B8A] border border-slate-300/80",
-    dotClass: "bg-[#3B5B8A]",
-  },
-};
 
 const MODE_LABELS: Record<RedactionMode, string> = {
   FULL_MASK: "Full Mask",
@@ -72,7 +19,7 @@ function LineNumbers({ text }: { text: string }) {
   return (
     <div
       aria-hidden="true"
-      className="select-none border-r border-slate-200/80 bg-slate-50/70 px-2.5 py-3 text-right font-mono text-[11px] leading-6 text-slate-400"
+      className="select-none border-r border-slate-200/80 bg-slate-50/70 px-2.5 py-3 text-right font-mono text-[11px] leading-6 text-slate-500"
     >
       {Array.from({ length: lineCount }, (_, idx) => (
         <div key={idx + 1}>{idx + 1}</div>
@@ -92,6 +39,7 @@ interface DiffViewerProps {
   activeCategoryFilter: PiiType | null;
 }
 
+/** Side-by-side raw vs. sanitized diff viewer with drag-and-drop upload and inline edit mode. */
 export function DiffViewer({
   rawText,
   onChangeRawText,
@@ -140,9 +88,11 @@ export function DiffViewer({
     originalNodes.push(
       <mark
         key={`orig-mark-${match.id}`}
-        className={`rounded px-1 py-0.5 font-medium transition-opacity ${
-          meta.markClass
-        } ${isDimmed ? "opacity-35" : "opacity-100"}`}
+        className={`rounded px-1 py-0.5 font-medium transition-colors ${
+          isDimmed
+            ? "border border-slate-300 bg-slate-100 text-slate-800"
+            : meta.markClass
+        }`}
       >
         <span className="sr-only">{meta.label}: </span>
         {match.value}
@@ -152,13 +102,17 @@ export function DiffViewer({
     sanitizedNodes.push(
       <span
         key={`san-mark-${match.id}`}
-        className={`inline-flex items-center gap-1 rounded border px-1 py-0.5 font-semibold transition-opacity ${
-          meta.badgeClass
-        } ${isDimmed ? "opacity-35" : "opacity-100"}`}
+        className={`inline-flex items-center gap-1 rounded border px-1 py-0.5 font-semibold transition-colors ${
+          isDimmed
+            ? "border-slate-300 bg-slate-100 text-slate-800"
+            : meta.badgeClass
+        }`}
       >
         <span
           aria-hidden="true"
-          className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${meta.dotClass}`}
+          className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+            isDimmed ? "bg-slate-500" : meta.dotClass
+          }`}
         />
         {match.replacement}
       </span>
@@ -207,7 +161,7 @@ export function DiffViewer({
             >
               Raw Input &mdash; Local Only
             </h2>
-            <span className="hidden font-mono text-[11px] text-slate-500 sm:inline">
+            <span className="hidden font-mono text-[11px] text-slate-600 sm:inline">
               {rawText.length.toLocaleString()} chars
             </span>
           </div>
@@ -223,7 +177,7 @@ export function DiffViewer({
                 aria-pressed={effectiveView === "HIGHLIGHTED"}
                 disabled={!hasText}
                 onClick={() => setInputView("HIGHLIGHTED")}
-                className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-40 ${
+                className={`min-h-7 rounded px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
                   effectiveView === "HIGHLIGHTED"
                     ? "bg-slate-900 text-white"
                     : "text-slate-600 hover:text-slate-900"
@@ -235,7 +189,7 @@ export function DiffViewer({
                 type="button"
                 aria-pressed={effectiveView === "EDIT"}
                 onClick={switchToEdit}
-                className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                className={`min-h-7 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                   effectiveView === "EDIT"
                     ? "bg-slate-900 text-white"
                     : "text-slate-600 hover:text-slate-900"
@@ -255,7 +209,7 @@ export function DiffViewer({
                     textareaRef.current?.focus();
                   });
                 }}
-                className="rounded px-1.5 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-200/60 hover:text-slate-900"
+                className="min-h-7 rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
               >
                 Clear
               </button>
@@ -266,7 +220,8 @@ export function DiffViewer({
         {fileError && (
           <div
             role="alert"
-            className="border-b border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-900"
+            aria-live="assertive"
+            className="border-b border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-900"
           >
             {fileError}
           </div>
@@ -284,7 +239,7 @@ export function DiffViewer({
           {isReadingFile ? (
             <div
               role="status"
-              className="flex flex-1 items-center justify-center p-6 text-xs text-slate-500"
+              className="flex flex-1 items-center justify-center p-6 text-xs text-slate-600"
             >
               Reading local file in memory...
             </div>
@@ -295,7 +250,7 @@ export function DiffViewer({
                 tabIndex={0}
                 aria-label="Raw input with detected PII highlights. Switch to Edit to modify."
                 onDoubleClick={switchToEdit}
-                className="flex-1 px-3.5 py-3 font-mono text-xs leading-6 whitespace-pre-wrap break-words text-slate-900"
+                className="flex-1 px-3.5 py-3 font-mono text-xs leading-6 whitespace-pre-wrap break-words text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-inset"
               >
                 {originalNodes}
               </div>
@@ -314,7 +269,7 @@ export function DiffViewer({
                   onChange={(e) => onChangeRawText(e.target.value)}
                   spellCheck={false}
                   placeholder="Paste support tickets, clinical notes, logs, or drag & drop a .txt / .csv file here..."
-                  className="h-full w-full flex-1 resize-none border-0 bg-transparent px-3.5 py-3 font-mono text-xs leading-6 text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                  className="h-full w-full flex-1 resize-none border-0 bg-transparent px-3.5 py-3 font-mono text-xs leading-6 text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-inset"
                 />
               </div>
             </div>
@@ -360,7 +315,7 @@ export function DiffViewer({
               <p className="text-xs font-medium text-slate-900">
                 No input text loaded
               </p>
-              <p className="mt-1 text-[11px] text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 Load a sample preset, drop a .txt/.csv file, or paste text in
                 the left pane.
               </p>
@@ -371,7 +326,7 @@ export function DiffViewer({
               <div
                 tabIndex={0}
                 aria-label="Sanitized output live diff"
-                className="flex-1 px-3.5 py-3 font-mono text-xs leading-6 whitespace-pre-wrap break-words text-slate-900"
+                className="flex-1 px-3.5 py-3 font-mono text-xs leading-6 whitespace-pre-wrap break-words text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-inset"
               >
                 {sanitizedNodes}
               </div>

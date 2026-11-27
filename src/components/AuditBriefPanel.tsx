@@ -28,6 +28,7 @@ interface AuditBriefPanelProps {
   onRunAudit: () => void;
 }
 
+/** Displays the AI or local-fallback privacy audit brief, loading state, and error recovery UI. */
 export function AuditBriefPanel({
   audit,
   loading,
@@ -58,7 +59,8 @@ export function AuditBriefPanel({
       <div className="flex flex-col items-start justify-between gap-2 py-2 sm:flex-row sm:items-center">
         <p
           role="alert"
-          className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-900"
+          aria-live="assertive"
+          className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-900"
         >
           {error}
         </p>
@@ -66,7 +68,7 @@ export function AuditBriefPanel({
           type="button"
           disabled={!hasText}
           onClick={onRunAudit}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-45"
+          className="min-h-9 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-45"
         >
           Retry Audit
         </button>
@@ -78,9 +80,9 @@ export function AuditBriefPanel({
     return (
       <div className="flex flex-col items-start justify-between gap-3 py-2 sm:flex-row sm:items-center">
         <div>
-          <p className="text-xs font-semibold text-slate-900">
+          <h3 className="text-xs font-semibold text-slate-900">
             Post-Redaction Compliance Audit (Optional)
-          </p>
+          </h3>
           <p className="mt-0.5 text-xs text-slate-600">
             Sends only the already-sanitized text and aggregate entity counts to{" "}
             <span className="font-mono">/api/audit</span> &mdash; raw PII never
@@ -91,7 +93,7 @@ export function AuditBriefPanel({
           type="button"
           disabled={!hasText}
           onClick={onRunAudit}
-          className="shrink-0 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
+          className="shrink-0 min-h-9 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
         >
           Run Gemini Privacy Audit
         </button>
@@ -100,7 +102,13 @@ export function AuditBriefPanel({
   }
 
   return (
-    <div className="space-y-2.5 py-1">
+    <div
+      role="region"
+      aria-live="polite"
+      aria-label="Gemini Privacy Audit Results"
+      className="space-y-2.5 py-1"
+    >
+      <h3 className="sr-only">Gemini Privacy Audit Results</h3>
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${

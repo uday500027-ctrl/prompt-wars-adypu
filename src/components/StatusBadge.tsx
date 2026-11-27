@@ -5,12 +5,13 @@ interface StatusBadgeProps {
   processingTimeMs: number | null;
 }
 
+/** Sticky top application header displaying zero-transmission status and scan latency. */
 export function StatusBadge({
   bytesSent = 0,
   processingTimeMs,
 }: StatusBadgeProps) {
   return (
-    <header className="sticky top-0 z-30 h-[52px] border-b border-slate-200/90 bg-white/95 backdrop-blur-xs">
+    <header className="sticky top-0 z-30 h-[52px] border-b border-slate-200/90 bg-white/95 backdrop-blur-xs" aria-label="RedactLocal application header">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-2 px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           <div
@@ -37,18 +38,18 @@ export function StatusBadge({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-medium text-emerald-900">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-medium text-emerald-900 truncate">
             <span
-              className="h-1.5 w-1.5 rounded-full bg-emerald-600"
+              className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0"
               aria-hidden="true"
             />
-            <span className="font-mono">
+            <span className="font-mono truncate">
               Local-Only &bull; {bytesSent} Bytes Sent
             </span>
           </div>
           <span
-            className="hidden min-w-[56px] rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-center font-mono text-[11px] text-slate-600 sm:inline-block"
+            className="hidden min-w-[56px] rounded-md border border-slate-200/90 bg-slate-50 px-2 py-1 text-center font-mono text-[11px] text-slate-700 sm:inline-block"
             title="Client-side scan latency"
           >
             {processingTimeMs !== null

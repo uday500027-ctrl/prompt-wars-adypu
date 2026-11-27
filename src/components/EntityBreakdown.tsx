@@ -1,20 +1,11 @@
 "use client";
 
-import { ENTITY_META } from "@/src/components/DiffViewer";
+import { ALL_PII_CATEGORIES, ENTITY_META } from "@/src/lib/pii/constants";
 import type {
   PiiType,
   RedactionMode,
   SanitizationResult,
 } from "@/src/lib/pii/types";
-
-const ENTITY_ORDER: readonly PiiType[] = [
-  "EMAIL",
-  "PHONE",
-  "IP_ADDRESS",
-  "PAN",
-  "AADHAAR",
-  "CREDIT_CARD",
-];
 
 interface EntityBreakdownProps {
   result: SanitizationResult;
@@ -24,6 +15,7 @@ interface EntityBreakdownProps {
   onToggleCategory: (type: PiiType) => void;
 }
 
+/** Displays redaction telemetry counts and interactive per-category policy toggle chips. */
 export function EntityBreakdown({
   result,
   activeCategoryFilter,
@@ -64,11 +56,11 @@ export function EntityBreakdown({
         aria-label="PII category redaction policy toggles"
         className="flex flex-wrap items-center gap-1.5"
       >
-        <span className="text-[11px] font-medium text-slate-500 select-none">
+        <span className="text-[11px] font-semibold text-slate-700 select-none">
           Redact:
         </span>
 
-        {ENTITY_ORDER.map((type) => {
+        {ALL_PII_CATEGORIES.map((type) => {
           const meta = ENTITY_META[type];
           const count = result.counts[type];
           const isEnabled = enabledCategories.has(type);
@@ -78,6 +70,7 @@ export function EntityBreakdown({
               key={type}
               type="button"
               aria-pressed={isEnabled}
+              aria-label={`${isEnabled ? "Disable" : "Enable"} ${meta.label} redaction, ${count} detected`}
               title={isEnabled ? `Disable ${meta.label} redaction` : `Enable ${meta.label} redaction`}
               onClick={() => {
                 onToggleCategory(type);
@@ -86,10 +79,10 @@ export function EntityBreakdown({
                   onSelectCategoryFilter(null);
                 }
               }}
-              className={`inline-flex min-h-7 items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all ${
+              className={`inline-flex min-h-8 items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
                 isEnabled
                   ? `${meta.badgeClass} hover:brightness-95`
-                  : "border-slate-200 bg-slate-50 text-slate-400 line-through decoration-slate-400/60 hover:border-slate-300 hover:text-slate-500"
+                  : "border-slate-300 bg-slate-100 text-slate-700 line-through decoration-slate-500 hover:border-slate-400 hover:text-slate-900"
               }`}
             >
               {isEnabled && (
@@ -113,6 +106,7 @@ interface PseudonymTableProps {
   onSwitchToPseudonymize: (mode: RedactionMode) => void;
 }
 
+/** Renders the local-only deterministic mapping between pseudonym tokens and original PII values. */
 export function PseudonymTable({
   result,
   onSwitchToPseudonymize,
@@ -121,9 +115,9 @@ export function PseudonymTable({
     return (
       <div className="flex flex-col items-start justify-between gap-3 py-2 sm:flex-row sm:items-center">
         <div>
-          <p className="text-xs font-semibold text-slate-900">
+          <h3 className="text-xs font-semibold text-slate-900">
             Pseudonym mapping is active in Pseudonymize mode
-          </p>
+          </h3>
           <p className="mt-0.5 text-xs text-slate-600">
             Switch to Pseudonymize to map recurring entities deterministically
             (e.g., <span className="font-mono">EMAIL_01</span>,{" "}
@@ -134,7 +128,7 @@ export function PseudonymTable({
         <button
           type="button"
           onClick={() => onSwitchToPseudonymize("PSEUDONYMIZE")}
-          className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50"
+          className="shrink-0 min-h-9 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50"
         >
           Switch to Pseudonymize
         </button>
@@ -156,7 +150,7 @@ export function PseudonymTable({
       tabIndex={0}
       role="region"
       aria-label="Consistent pseudonym mapping table"
-      className="max-h-56 overflow-auto rounded-lg border border-slate-200/90"
+      className="max-h-56 overflow-auto rounded-lg border border-slate-200/90 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-inset"
     >
       <table className="min-w-full border-collapse text-left text-xs">
         <caption className="sr-only">

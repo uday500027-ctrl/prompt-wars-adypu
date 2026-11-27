@@ -7,6 +7,7 @@ interface StarBorderProps {
   className?: string;
 }
 
+/** Renders a subtle 1px animated border frame around high-priority action buttons. */
 export function StarBorder({ children, className = "" }: StarBorderProps) {
   return (
     <div className={`relative inline-flex rounded-[7px] p-[1px] ${className}`}>

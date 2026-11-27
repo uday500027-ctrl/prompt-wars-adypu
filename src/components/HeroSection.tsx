@@ -30,6 +30,7 @@ interface HeroSectionProps {
   onTriggerUpload: () => void;
 }
 
+/** Editorial hero section with value proposition, proof strip, and quick-launch CTAs. */
 export function HeroSection({
   onLaunchDemo,
   onTriggerUpload,
@@ -57,11 +58,12 @@ export function HeroSection({
 
             <h1
               id="hero-heading"
-              className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl sm:leading-[1.12]"
+              className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl sm:leading-[1.12]"
             >
               Scrub sensitive PII from{" "}
               <RotatingText
                 phrases={HERO_TARGETS}
+                srFallback="sensitive documents and data"
                 intervalMs={3600}
                 pauseOnHover
                 className="rounded-sm border-b-2 border-slate-900/70 bg-slate-200/70 px-1.5 text-slate-950"
@@ -78,15 +80,15 @@ export function HeroSection({
               <button
                 type="button"
                 onClick={onLaunchDemo}
-                className="min-h-10 rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-slate-800 sm:text-sm"
+                className="min-h-11 rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-slate-800 sm:text-sm"
               >
-                Launch Live Demo &darr;
+                Launch Live Demo <span aria-hidden="true">&darr;</span>
               </button>
 
               <button
                 type="button"
                 onClick={onTriggerUpload}
-                className="min-h-10 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-2xs transition-colors hover:border-slate-900 hover:bg-slate-50 sm:text-sm"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-2xs transition-colors hover:border-slate-900 hover:bg-slate-50 sm:text-sm"
               >
                 Upload .txt / .csv
               </button>
