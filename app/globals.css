@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-canvas: #f8fafc;
+  --bg-card: #ffffff;
+  --ink-primary: #0f172a;
+  --ink-muted: #475569;
+  --border-hairline: rgba(226, 232, 240, 0.9);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg-canvas);
+  --color-foreground: var(--ink-primary);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--ink-primary);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+}
+
+.dark-toolbar :where(button, a, [tabindex]):focus-visible {
+  outline-color: #ffffff;
+}
+
+.hero-dot-grid {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#e2e8f0 1.25px, transparent 1.25px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+}
+
+[role="tab"] {
+  position: relative;
+}
+
+[role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  border-block-end: 2px solid #0f172a;
+}
+
+@keyframes fade-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rotating-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes star-border-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .animate-fade-content {
+    animation: fade-content-in 500ms ease-out both;
+  }
+
+  .animate-rotating-text {
+    animation: rotating-text-in 450ms ease-out both;
+  }
+
+  .star-border-beam {
+    animation: star-border-spin 4s linear infinite;
+  }
 }
