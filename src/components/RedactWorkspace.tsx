@@ -25,6 +25,15 @@ import type {
   RedactionMode,
 } from "@/src/lib/pii/types";
 
+const ALL_CATEGORIES: readonly PiiType[] = [
+  "EMAIL",
+  "PHONE",
+  "IP_ADDRESS",
+  "PAN",
+  "AADHAAR",
+  "CREDIT_CARD",
+];
+
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 
 const SAMPLE_SHORT_LABELS: Record<string, string> = {
@@ -58,6 +67,9 @@ export function RedactWorkspace() {
   );
   const [activeCategoryFilter, setActiveCategoryFilter] =
     useState<PiiType | null>(null);
+  const [enabledCategories, setEnabledCategories] = useState<
+    ReadonlySet<PiiType>
+  >(new Set(ALL_CATEGORIES));
   const [activeTab, setActiveTab] = useState<InspectionTab>("PSEUDONYMS");
 
   const [isReadingFile, setIsReadingFile] = useState(false);
@@ -81,8 +93,8 @@ export function RedactWorkspace() {
   const auditTabRef = useRef<HTMLButtonElement | null>(null);
 
   const result = useMemo(
-    () => sanitizeText(rawText, mode),
-    [rawText, mode]
+    () => sanitizeText(rawText, mode, [...enabledCategories]),
+    [rawText, mode, enabledCategories]
   );
 
   const scrollToWorkbench = useCallback(() => {
@@ -399,6 +411,18 @@ export function RedactWorkspace() {
                   result={result}
                   activeCategoryFilter={activeCategoryFilter}
                   onSelectCategoryFilter={setActiveCategoryFilter}
+                  enabledCategories={enabledCategories}
+                  onToggleCategory={(type) => {
+                    setEnabledCategories((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(type)) {
+                        next.delete(type);
+                      } else {
+                        next.add(type);
+                      }
+                      return next;
+                    });
+                  }}
                 />
 
                 {/* Bottom Inspection Tabs */}
@@ -448,7 +472,7 @@ export function RedactWorkspace() {
                     >
                       <span>Gemini Privacy Audit Brief</span>
                       {auditBrief && (
-                        <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] text-emerald-900">
+                        <span className="rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-700">
                           {auditBrief.riskLevel}
                         </span>
                       )}

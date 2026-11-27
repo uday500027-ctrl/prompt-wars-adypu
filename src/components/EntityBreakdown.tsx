@@ -20,16 +20,20 @@ interface EntityBreakdownProps {
   result: SanitizationResult;
   activeCategoryFilter: PiiType | null;
   onSelectCategoryFilter: (next: PiiType | null) => void;
+  enabledCategories: ReadonlySet<PiiType>;
+  onToggleCategory: (type: PiiType) => void;
 }
 
 export function EntityBreakdown({
   result,
   activeCategoryFilter,
   onSelectCategoryFilter,
+  enabledCategories,
+  onToggleCategory,
 }: EntityBreakdownProps) {
   return (
     <section
-      aria-label="Detection telemetry and category filters"
+      aria-label="Detection telemetry and category policy toggles"
       className="flex flex-col gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 lg:flex-row lg:items-center lg:justify-between"
     >
       <div className="flex flex-wrap items-center gap-4">
@@ -48,49 +52,52 @@ export function EntityBreakdown({
           <span className="text-xs font-medium text-slate-600">
             False Positives Blocked (Luhn)
           </span>
-          <span className="font-mono text-sm font-semibold text-emerald-800">
+          <span className="font-mono text-sm font-semibold text-slate-700">
             {result.falsePositivesBlocked}
           </span>
         </div>
       </div>
 
+      {/* Category policy toggles — click to include/exclude from redaction */}
       <div
         role="group"
-        aria-label="Filter diff highlights by PII category"
+        aria-label="PII category redaction policy toggles"
         className="flex flex-wrap items-center gap-1.5"
       >
-        <button
-          type="button"
-          aria-pressed={activeCategoryFilter === null}
-          onClick={() => onSelectCategoryFilter(null)}
-          className={`min-h-7 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-            activeCategoryFilter === null
-              ? "border-slate-900 bg-slate-900 text-white"
-              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
-          }`}
-        >
-          All
-        </button>
+        <span className="text-[11px] font-medium text-slate-500 select-none">
+          Redact:
+        </span>
 
         {ENTITY_ORDER.map((type) => {
           const meta = ENTITY_META[type];
           const count = result.counts[type];
-          const selected = activeCategoryFilter === type;
+          const isEnabled = enabledCategories.has(type);
 
           return (
             <button
               key={type}
               type="button"
-              aria-pressed={selected}
-              onClick={() =>
-                onSelectCategoryFilter(selected ? null : type)
-              }
-              className={`inline-flex min-h-7 items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
-                selected
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : `${meta.badgeClass} hover:brightness-95`
+              aria-pressed={isEnabled}
+              title={isEnabled ? `Disable ${meta.label} redaction` : `Enable ${meta.label} redaction`}
+              onClick={() => {
+                onToggleCategory(type);
+                // Clear the diff filter if toggling the currently filtered type
+                if (activeCategoryFilter === type) {
+                  onSelectCategoryFilter(null);
+                }
+              }}
+              className={`inline-flex min-h-7 items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all ${
+                isEnabled
+                  ? `${meta.badgeClass} hover:brightness-95`
+                  : "border-slate-200 bg-slate-50 text-slate-400 line-through decoration-slate-400/60 hover:border-slate-300 hover:text-slate-500"
               }`}
             >
+              {isEnabled && (
+                <span
+                  aria-hidden="true"
+                  className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${meta.dotClass}`}
+                />
+              )}
               <span>{meta.label}</span>
               <span className="font-mono font-semibold">{count}</span>
             </button>

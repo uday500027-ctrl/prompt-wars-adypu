@@ -64,7 +64,7 @@ export function HeroSection({
                 phrases={HERO_TARGETS}
                 intervalMs={3600}
                 pauseOnHover
-                className="rounded-sm border-b-2 border-emerald-500/60 bg-emerald-50 px-1.5 text-emerald-900"
+                className="rounded-sm border-b-2 border-slate-900/70 bg-slate-200/70 px-1.5 text-slate-950"
               />{" "}
               &mdash; entirely in your browser.
             </h1>

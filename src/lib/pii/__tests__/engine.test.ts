@@ -120,6 +120,37 @@ describe("sanitizeText — 3 redaction modes", () => {
   });
 });
 
+describe("sanitizeText — enabledCategories policy toggles", () => {
+  const mixed =
+    "Email: ops@acme.in, IP: 10.0.0.1, Card: 4111-1111-1111-1111, PAN: ABCDE1234F";
+
+  it("skipping IP_ADDRESS leaves IPs unredacted while still redacting other PII", () => {
+    const res = sanitizeText(mixed, "FULL_MASK", [
+      "EMAIL",
+      "PHONE",
+      "PAN",
+      "AADHAAR",
+      "CREDIT_CARD",
+    ]);
+    // IP should be untouched
+    expect(res.sanitizedText).toContain("10.0.0.1");
+    expect(res.sanitizedText).not.toContain("[REDACTED_IP]");
+    expect(res.counts.IP_ADDRESS).toBe(0);
+    // Other PII should still be redacted
+    expect(res.sanitizedText).toContain("[REDACTED_EMAIL]");
+    expect(res.sanitizedText).toContain("[REDACTED_CARD]");
+    expect(res.sanitizedText).toContain("[REDACTED_PAN]");
+  });
+
+  it("empty enabledCategories array produces unredacted output with zero matches", () => {
+    const res = sanitizeText(mixed, "FULL_MASK", []);
+    expect(res.totalMatches).toBe(0);
+    expect(res.sanitizedText).toBe(mixed);
+    expect(res.counts.EMAIL).toBe(0);
+    expect(res.counts.CREDIT_CARD).toBe(0);
+  });
+});
+
 describe("seeded sample datasets", () => {
   it("all 3 seeded samples block at least one decoy 16-digit ID and detect PII", () => {
     for (const dataset of SAMPLE_DATASETS) {

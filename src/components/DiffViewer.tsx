@@ -9,43 +9,55 @@ import type {
 
 export const ENTITY_META: Record<
   PiiType,
-  { label: string; short: string; badgeClass: string; markClass: string }
+  { label: string; short: string; badgeClass: string; markClass: string; dotClass: string }
 > = {
   EMAIL: {
     label: "Email",
     short: "EMAIL",
-    badgeClass: "border-sky-200 bg-sky-50 text-sky-900",
-    markClass: "bg-sky-100/90 text-sky-950 border border-sky-300/90",
+    // muted slate-blue
+    badgeClass: "border-slate-300/80 bg-slate-100 text-slate-900",
+    markClass: "bg-slate-100 text-slate-900 border border-slate-300/80",
+    dotClass: "bg-[#3B5B8A]",
   },
   PHONE: {
     label: "Phone",
     short: "PHONE",
-    badgeClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
-    markClass: "bg-indigo-100/90 text-indigo-950 border border-indigo-300/90",
+    // muted stone
+    badgeClass: "border-stone-300/80 bg-stone-100 text-stone-900",
+    markClass: "bg-stone-100 text-stone-900 border border-stone-300/80",
+    dotClass: "bg-stone-500",
   },
   IP_ADDRESS: {
     label: "IP",
     short: "IP",
-    badgeClass: "border-teal-200 bg-teal-50 text-teal-900",
-    markClass: "bg-teal-100/90 text-teal-950 border border-teal-300/90",
+    // muted slate
+    badgeClass: "border-slate-300/80 bg-slate-50 text-slate-800",
+    markClass: "bg-slate-50 text-slate-800 border border-slate-300/80",
+    dotClass: "bg-slate-500",
   },
   PAN: {
     label: "PAN",
     short: "PAN",
-    badgeClass: "border-amber-200 bg-amber-50 text-amber-900",
-    markClass: "bg-amber-100/90 text-amber-950 border border-amber-300/90",
+    // muted amber
+    badgeClass: "border-amber-200/90 bg-amber-50 text-[#92600A]",
+    markClass: "bg-amber-50 text-[#92600A] border border-amber-200/90",
+    dotClass: "bg-[#92600A]",
   },
   AADHAAR: {
     label: "Aadhaar",
     short: "AADHAAR",
-    badgeClass: "border-rose-200 bg-rose-50 text-rose-900",
-    markClass: "bg-rose-100/90 text-rose-950 border border-rose-300/90",
+    // muted rose
+    badgeClass: "border-rose-200/90 bg-rose-50 text-[#9F2D3A]",
+    markClass: "bg-rose-50 text-[#9F2D3A] border border-rose-200/90",
+    dotClass: "bg-[#9F2D3A]",
   },
   CREDIT_CARD: {
     label: "Credit Card",
     short: "CARD",
-    badgeClass: "border-violet-200 bg-violet-50 text-violet-900",
-    markClass: "bg-violet-100/90 text-violet-950 border border-violet-300/90",
+    // muted blue-slate
+    badgeClass: "border-slate-300/80 bg-slate-100 text-[#3B5B8A]",
+    markClass: "bg-slate-100 text-[#3B5B8A] border border-slate-300/80",
+    dotClass: "bg-[#3B5B8A]",
   },
 };
 
@@ -140,10 +152,14 @@ export function DiffViewer({
     sanitizedNodes.push(
       <span
         key={`san-mark-${match.id}`}
-        className={`inline-block rounded border px-1 py-0.5 font-semibold transition-opacity ${
+        className={`inline-flex items-center gap-1 rounded border px-1 py-0.5 font-semibold transition-opacity ${
           meta.badgeClass
         } ${isDimmed ? "opacity-35" : "opacity-100"}`}
       >
+        <span
+          aria-hidden="true"
+          className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${meta.dotClass}`}
+        />
         {match.replacement}
       </span>
     );
@@ -326,12 +342,12 @@ export function DiffViewer({
 
           <div className="flex items-center gap-1.5">
             {result.counts.CREDIT_CARD > 0 && (
-              <span className="rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-900">
+              <span className="rounded border border-slate-300/80 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#3B5B8A]">
                 Luhn-verified
               </span>
             )}
             {result.falsePositivesBlocked > 0 && (
-              <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900">
+              <span className="rounded border border-slate-300/80 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
                 Order ID preserved
               </span>
             )}

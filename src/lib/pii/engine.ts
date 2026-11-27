@@ -118,10 +118,13 @@ function formatPartialMask(type: PiiType, value: string): string {
 
 /**
  * Sanitizes raw text entirely in-memory without mutating or transmitting input.
+ * @param enabledCategories - Subset of PII types to redact (all 6 by default).
+ *   Disabled categories are detected but left untouched in the output.
  */
 export function sanitizeText(
   rawText: string,
-  mode: RedactionMode
+  mode: RedactionMode,
+  enabledCategories?: PiiType[]
 ): SanitizationResult {
   const startTime =
     typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -133,47 +136,61 @@ export function sanitizeText(
   const typeCounters: EntityCounts = createEmptyCounts();
   const pseudonymRegistry = new Map<string, PseudonymEntry>();
 
-  const matches: PiiMatch[] = candidates.map((candidate) => {
-    counts[candidate.type] += 1;
+  // Build the active set once — O(1) lookup per match
+  const activeSet: ReadonlySet<PiiType> = enabledCategories
+    ? new Set(enabledCategories)
+    : new Set<PiiType>([
+        "EMAIL",
+        "PHONE",
+        "IP_ADDRESS",
+        "PAN",
+        "AADHAAR",
+        "CREDIT_CARD",
+      ]);
 
-    const normKey = `${candidate.type}:${normalizeForPseudonym(
-      candidate.type,
-      candidate.value
-    )}`;
-    let entry = pseudonymRegistry.get(normKey);
-    if (!entry) {
-      typeCounters[candidate.type] += 1;
-      const serial = String(typeCounters[candidate.type]).padStart(2, "0");
-      entry = {
-        token: `${PSEUDONYM_PREFIXES[candidate.type]}_${serial}`,
+  const matches: PiiMatch[] = candidates
+    .filter((candidate) => activeSet.has(candidate.type))
+    .map((candidate) => {
+      counts[candidate.type] += 1;
+
+      const normKey = `${candidate.type}:${normalizeForPseudonym(
+        candidate.type,
+        candidate.value
+      )}`;
+      let entry = pseudonymRegistry.get(normKey);
+      if (!entry) {
+        typeCounters[candidate.type] += 1;
+        const serial = String(typeCounters[candidate.type]).padStart(2, "0");
+        entry = {
+          token: `${PSEUDONYM_PREFIXES[candidate.type]}_${serial}`,
+          type: candidate.type,
+          normalizedKey: normKey,
+          sampleValue: candidate.value,
+          occurrences: 0,
+        };
+        pseudonymRegistry.set(normKey, entry);
+      }
+      entry.occurrences += 1;
+
+      let replacement: string;
+      if (mode === "FULL_MASK") {
+        replacement = FULL_MASK_LABELS[candidate.type];
+      } else if (mode === "PARTIAL_MASK") {
+        replacement = formatPartialMask(candidate.type, candidate.value);
+      } else {
+        replacement = entry.token;
+      }
+
+      return {
+        id: `${candidate.type}-${candidate.start}-${candidate.end}`,
         type: candidate.type,
-        normalizedKey: normKey,
-        sampleValue: candidate.value,
-        occurrences: 0,
+        value: candidate.value,
+        start: candidate.start,
+        end: candidate.end,
+        replacement,
+        confidence: candidate.confidence,
       };
-      pseudonymRegistry.set(normKey, entry);
-    }
-    entry.occurrences += 1;
-
-    let replacement: string;
-    if (mode === "FULL_MASK") {
-      replacement = FULL_MASK_LABELS[candidate.type];
-    } else if (mode === "PARTIAL_MASK") {
-      replacement = formatPartialMask(candidate.type, candidate.value);
-    } else {
-      replacement = entry.token;
-    }
-
-    return {
-      id: `${candidate.type}-${candidate.start}-${candidate.end}`,
-      type: candidate.type,
-      value: candidate.value,
-      start: candidate.start,
-      end: candidate.end,
-      replacement,
-      confidence: candidate.confidence,
-    };
-  });
+    });
 
   // Reconstruct sanitized string preserving exact slices outside matched spans
   let cursor = 0;
