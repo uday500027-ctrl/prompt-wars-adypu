@@ -46,12 +46,12 @@ const MODE_OPTIONS: ReadonlyArray<{
   value: RedactionMode;
   label: string;
 }> = [
-  { value: "FULL_MASK", label: "Full Mask" },
-  { value: "PARTIAL_MASK", label: "Partial Mask" },
-  { value: "PSEUDONYMIZE", label: "Pseudonymize" },
-];
+    { value: "FULL_MASK", label: "Full Mask" },
+    { value: "PARTIAL_MASK", label: "Partial Mask" },
+    { value: "PSEUDONYMIZE", label: "Pseudonymize" },
+  ];
 
-const emptySubscribe = () => () => {};
+const emptySubscribe = () => () => { };
 
 type InspectionTab = "PSEUDONYMS" | "AUDIT";
 
@@ -195,6 +195,41 @@ export function RedactWorkspace() {
     URL.revokeObjectURL(url);
   }, [exportFilename, result.sanitizedText]);
 
+  const handleDownloadAuditJson = useCallback(() => {
+    if (!result.sanitizedText) return;
+    const certificate = {
+      generatedAt: new Date().toISOString(),
+      engine: "RedactLocal Client-Side PII Engine",
+      processingLocation: "100% Browser-Local (0 bytes raw PII transmitted)",
+      sourceFilename: exportFilename,
+      redactionMode: result.mode,
+      enabledCategories: [...enabledCategories],
+      totalEntitiesRedacted: result.totalMatches,
+      falsePositivesBlockedLuhn: result.falsePositivesBlocked,
+      countsByCategory: result.counts,
+    };
+
+    const blob = new Blob([JSON.stringify(certificate, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "redactlocal-audit-report.json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  }, [
+    enabledCategories,
+    exportFilename,
+    result.counts,
+    result.falsePositivesBlocked,
+    result.mode,
+    result.sanitizedText,
+    result.totalMatches,
+  ]);
+
   const handleRunAudit = useCallback(async () => {
     setActiveTab("AUDIT");
     setAuditLoading(true);
@@ -285,11 +320,10 @@ export function RedactWorkspace() {
                         type="button"
                         onClick={() => handleLoadSample(sample.id)}
                         aria-pressed={isActive}
-                        className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
-                          isActive
+                        className={`min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${isActive
                             ? "border-white bg-white text-slate-950"
                             : "border-slate-700 bg-slate-800 text-slate-200 hover:border-slate-500 hover:bg-slate-700/80"
-                        }`}
+                          }`}
                       >
                         {SAMPLE_SHORT_LABELS[sample.id] ?? sample.label}
                       </button>
@@ -335,11 +369,10 @@ export function RedactWorkspace() {
                           setMode(opt.value);
                           setAuditBrief(null);
                         }}
-                        className={`min-h-7 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                          active
+                        className={`min-h-7 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${active
                             ? "bg-white text-slate-950 shadow-2xs"
                             : "text-slate-300 hover:text-white"
-                        }`}
+                          }`}
                       >
                         {opt.label}
                       </button>
@@ -356,6 +389,15 @@ export function RedactWorkspace() {
                     className="min-h-8 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     Download {exportFilename.endsWith(".csv") ? ".csv" : ".txt"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!hasText}
+                    onClick={handleDownloadAuditJson}
+                    className="min-h-8 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    Audit JSON
                   </button>
 
                   <button
@@ -441,11 +483,10 @@ export function RedactWorkspace() {
                       tabIndex={activeTab === "PSEUDONYMS" ? 0 : -1}
                       onClick={() => setActiveTab("PSEUDONYMS")}
                       onKeyDown={(e) => handleTabKeyDown(e, "PSEUDONYMS")}
-                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${
-                        activeTab === "PSEUDONYMS"
+                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${activeTab === "PSEUDONYMS"
                           ? "text-slate-900"
                           : "text-slate-600 hover:text-slate-900"
-                      }`}
+                        }`}
                     >
                       <span>Pseudonym Mapping Table</span>
                       <span className="rounded bg-slate-200/70 px-1.5 py-0.5 font-mono text-[10px] text-slate-700">
@@ -464,11 +505,10 @@ export function RedactWorkspace() {
                       tabIndex={activeTab === "AUDIT" ? 0 : -1}
                       onClick={() => setActiveTab("AUDIT")}
                       onKeyDown={(e) => handleTabKeyDown(e, "AUDIT")}
-                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${
-                        activeTab === "AUDIT"
+                      className={`inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-semibold transition-colors ${activeTab === "AUDIT"
                           ? "text-slate-900"
                           : "text-slate-600 hover:text-slate-900"
-                      }`}
+                        }`}
                     >
                       <span>Gemini Privacy Audit Brief</span>
                       {auditBrief && (
